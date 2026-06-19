@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Swing Trading Playbook · NSE Daily Chart</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #FFFFFF;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1E293B;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 30px rgba(0,0,0,0.02);
+    }
+
+    /* --- theme variables (light) --- */
+    :root {
+      --bg: #FFFFFF;
+      --card: #F8FAFC;
+      --border: #E2E8F0;
+      --green: #00A86B;
+      --green-dim: #E6F7F0;
+      --red: #FF4757;
+      --red-dim: #FFEEF0;
+      --amber: #D97706;
+      --amber-dim: #FFF3E0;
+      --blue: #3B82F6;
+      --blue-dim: #EEF2FF;
+      --purple: #7C3AED;
+      --purple-dim: #F3E8FF;
+      --text: #1E293B;
+      --muted: #64748B;
+      --white: #FFFFFF;
+    }
+
+    /* ----- shared components ----- */
+    .pill {
+      background: var(--amber-dim);
+      color: var(--amber);
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .pill.small {
+      padding: 1px 7px;
+      font-size: 10px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      color: var(--amber);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      margin-top: 4px;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .btn.small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .btn.full {
+      width: 100%;
+    }
+    .btn.outline {
+      background: transparent;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      box-sizing: border-box;
+      transition: 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+    }
+
+    textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tab-content {
+      padding: 14px 12px 0;
+      flex: 1;
+    }
+
+    .tabs-row {
+      display: flex;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 2px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .tab-btn.active {
+      border-bottom: 2px solid var(--amber);
+      color: var(--amber);
+      font-weight: 700;
+    }
+
+    .output-box {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 10px 0;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 10px;
+      padding: 20px 16px 0;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+<div class="app-container" id="app">
+  <!-- header -->
+  <div style="padding: 20px 16px 16px; border-bottom: 1px solid var(--border); background: var(--card);">
+    <div style="color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px;">NSE Daily Chart</div>
+    <div style="color: var(--text); font-size: 20px; font-weight: 800; letter-spacing: -0.02em;">Swing Trading Playbook</div>
+    <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+      <span class="pill" style="background: var(--green-dim); color: var(--green);">Hold: 2-10 Days</span>
+      <span class="pill" style="background: var(--amber-dim); color: var(--amber);">Risk: 1% / Trade</span>
+      <span class="pill" style="background: var(--blue-dim); color: var(--blue);">Target: 5-12%</span>
+    </div>
+  </div>
+
+  <!-- dynamic tabs injected via js -->
+  <div id="tab-navigation" class="tabs-row"></div>
+  <div id="tab-content-root" class="tab-content"></div>
+  <div class="footer-note">Educational only. Not SEBI-registered advice. Paper trade first.</div>
+</div>
+
+<script>
+  (function() {
+    // ---------- theme & helpers ----------
+    const T = {
+      bg: "#FFFFFF", card: "#F8FAFC", border: "#E2E8F0",
+      green: "#00A86B", greenDim: "#E6F7F0", red: "#FF4757", redDim: "#FFEEF0",
+      amber: "#D97706", amberDim: "#FFF3E0", blue: "#3B82F6", blueDim: "#EEF2FF",
+      purple: "#7C3AED", purpleDim: "#F3E8FF", text: "#1E293B", muted: "#64748B", white: "#FFFFFF"
+    };
+
+    const fmt = (n) => "Rs." + Math.round(n).toLocaleString("en-IN");
+    const fmtR = (n) => (n >= 0 ? "+" : "") + Number(n).toFixed(2) + "R";
+
+    // ---------- tab navigation & state ----------
+    const TABS = ["Setup", "Entry", "Risk", "Journal", "Routine"];
+    let activeTab = 0;
+
+    const tabNav = document.getElementById('tab-navigation');
+    const contentRoot = document.getElementById('tab-content-root');
+
+    function renderTabs() {
+      tabNav.innerHTML = TABS.map((name, idx) => 
+        `<button class="tab-btn ${idx === activeTab ? 'active' : ''}" data-tab="${idx}">${name}</button>`
+      ).join('');
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.currentTarget.dataset.tab, 10);
+          if (!isNaN(idx) && idx !== activeTab) {
+            activeTab = idx;
+            renderAll();
+          }
+        });
+      });
+    }
+
+    function renderActiveContent() {
+      switch (activeTab) {
+        case 0: contentRoot.innerHTML = renderSetupTab(); break;
+        case 1: contentRoot.innerHTML = renderEntryTab(); break;
+        case 2: contentRoot.innerHTML = renderRiskTab(); break;
+        case 3: renderJournalTab(); break;  // journal uses dynamic events
+        case 4: contentRoot.innerHTML = renderRoutineTab(); break;
+        default: contentRoot.innerHTML = renderSetupTab();
+      }
+      if (activeTab === 2) attachRiskEvents();
+      if (activeTab === 3) attachJournalEvents();
+    }
+
+    function renderAll() {
+      renderTabs();
+      renderActiveContent();
+    }
+
+    // ---------- static tab renderers ----------
+    function renderSetupTab() {
+      return `
+        <div>
+          <div class="card" style="border-color: ${T.blue};">
+            <div class="section-title" style="color:${T.blue};">Stock Universe</div>
+            <div style="color:${T.text}; font-size:13px; line-height:1.7;">
+              Trade only <strong style="color:${T.blue};">Nifty 500 stocks</strong> on NSE. Focus on Nifty 100 to start.
+            </div>
+            <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
+              ${["ICICI Bank","HDFC Bank","Reliance","Tata Motors","Sun Pharma","L&T","Maruti"].map(s => 
+                `<span class="pill" style="background:${T.blueDim}; color:${T.blue};">${s}</span>`).join('')}
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">Screening Filter (Before Charts)</div>
+            ${[["ADTV","Average Daily Trading Volume > Rs.50 crore"],["Weekly Trend","Uptrend on weekly chart — higher highs + higher lows over 3 months"],["Price Level","Stock price above Rs.100 (avoids penny stock manipulation)"],["No Events","No earnings or RBI/SEBI announcements within 3 days"]].map(([l,d]) => `
+              <div style="display:flex; gap:10px; margin-bottom:9px; align-items:flex-start;">
+                <div style="color:${T.amber}; font-weight:700; font-size:11px; min-width:80px; padding-top:2px;">${l}</div>
+                <div style="color:${T.muted}; font-size:13px; line-height:1.5;">${d}</div>
+              </div>`).join('')}
+            <div style="background:${T.bg}; border-radius:8px; padding:8px 12px; margin-top:4px;">
+              <div style="color:${T.muted}; font-size:11px;">Use <strong style="color:${T.text};">Screener.in</strong> or <strong style="color:${T.text};">TradingView Screener</strong></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">TradingView Chart Setup (Daily 1D)</div>
+            ${[{ name: "200 EMA", color: "#D97706", purpose: "The big filter. Long trades only when price is above this." },{ name: "21 EMA", color: "#3B82F6", purpose: "Primary entry trigger. Buy pullbacks to this dynamic support." },{ name: "9 EMA", color: "#00A86B", purpose: "Fast signal. When price closes below, consider trimming." },{ name: "RSI (9)", color: "#7C3AED", purpose: "Separate window. Enter longs only when RSI above 40, ideally 50+." },{ name: "Volume", color: "#94A3B8", purpose: "Below 20-day avg during pullbacks — confirms weak sellers." }].map(ind => `
+              <div style="display:flex; gap:12px; margin-bottom:10px; align-items:flex-start;">
+                <div style="width:12px; height:12px; border-radius:50%; background:${ind.color}; margin-top:4px; min-width:12px;"></div>
+                <div><span style="color:${ind.color}; font-weight:700; font-size:13px;">${ind.name}</span><div style="color:${T.muted}; font-size:12px; margin-top:2px;">${ind.purpose}</div></div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function renderEntryTab() {
+      return `
+        <div>
+          <div style="background:${T.greenDim}; border:1px solid ${T.green}; border-radius:10px; padding:10px 14px; margin-bottom:10px;">
+            <div style="color:${T.green}; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">CORE STRATEGY</div>
+            <strong style="color:${T.text}; font-size:13px;">"21 EMA Pullback in an Uptrend"</strong>
+            <div style="margin-top:4px; color:#065F46; font-size:12px;">Institutional buyers use the 21 EMA as re-entry during pullbacks.</div>
+          </div>
+          <div class="card" style="border-color:${T.green};">
+            <div class="section-title" style="color:${T.green};">LONG ENTRY — All 5 Must Be True</div>
+            ${[["1","Weekly uptrend confirmed","3 months of higher highs + higher lows on weekly chart"],["2","Price above 200 EMA on daily","Confirms long-term trend is bullish"],["3","Price pulled back to 21 EMA","Stock has cooled down from recent peak"],["4","RSI (9) between 40-55","Not overbought. Still has room to run."],["5","Volume during pullback is LOW","Below 20-day average — sellers not aggressive"]].map(([n,t,s]) => `
+              <div style="display:flex; gap:12px; margin-bottom:10px; align-items:flex-start;">
+                <div style="min-width:26px; height:26px; border-radius:50%; background:${T.blueDim}; border:1px solid ${T.blue}; color:${T.blue}; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;">${n}</div>
+                <div><div style="color:${T.text}; font-size:14px;">${t}</div><div style="color:${T.muted}; font-size:12px; margin-top:2px;">${s}</div></div>
+              </div>`).join('')}
+          </div>
+          <div class="card">
+            <div class="section-title">Entry Trigger Candles</div>
+            ${[["Hammer / Pin Bar","Long lower wick, small body — buyers rejected the dip"],["Bullish Engulfing","Green candle fully swallows the previous red candle"],["Morning Star","3-candle: red, small doji, strong green"]].map(([name,desc]) => `
+              <div style="border-left:3px solid ${T.green}; padding-left:10px; margin-bottom:8px;">
+                <div style="color:${T.green}; font-weight:700; font-size:13px;">${name}</div><div style="color:${T.muted}; font-size:12px;">${desc}</div>
+              </div>`).join('')}
+          </div>
+          <div class="card" style="border-color:${T.red};">
+            <div class="section-title" style="color:${T.red};">STOP LOSS</div>
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
+              <div style="flex:1; background:${T.redDim}; border-radius:8px; padding:10px;"><div style="color:${T.red}; font-weight:700;">OPTION A</div><div>Below low of reversal candle</div></div>
+              <div style="flex:1; background:${T.redDim}; border-radius:8px; padding:10px;"><div style="color:${T.red}; font-weight:700;">OPTION B</div><div>1.5% below the 21 EMA</div></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderRiskTab() {
+      return `
+        <div>
+          <div class="card" style="border-color:${T.amber};">
+            <div class="section-title">The Golden Rule</div>
+            <div style="color:${T.text}; font-size:15px;"><strong style="color:${T.amber}; font-size:22px;">1%</strong> of total capital is the maximum risk per trade.</div>
+          </div>
+          <div class="card" id="risk-calc-card">
+            <div class="section-title">Position Size Calculator</div>
+            <div class="grid-2" style="margin-bottom:12px;">
+              <div><div style="color:${T.muted}; font-size:11px; margin-bottom:4px;">Amount Invested (Rs.)</div><input id="inv" type="number" value="100000" placeholder="100000"></div>
+              <div><div style="color:${T.muted}; font-size:11px; margin-bottom:4px;">Entry Price (Rs.)</div><input id="entry" type="number" value="500" placeholder="500"></div>
+              <div><div style="color:${T.muted}; font-size:11px; margin-bottom:4px;">Stop Loss (Rs.)</div><input id="sl" type="number" value="480" placeholder="480"></div>
+              <div><div style="color:${T.muted}; font-size:11px; margin-bottom:4px;">Target Price (Rs.)</div><input id="target" type="number" value="530" placeholder="530"></div>
+            </div>
+            <div id="risk-output" style="background:${T.bg}; border-radius:10px; padding:14px;"></div>
+          </div>
+        </div>`;
+    }
+
+    function renderRoutineTab() {
+      return `
+        <div>
+          <div class="card"><div class="section-title" style="color:${T.green};">Time Required</div><div style="display:flex; gap:10px;"><div style="flex:1; background:${T.greenDim}; border-radius:8px; padding:10px; text-align:center;"><div style="color:${T.green}; font-weight:700; font-size:22px;">20</div><div>min/day</div></div><div style="flex:1; background:${T.greenDim}; border-radius:8px; padding:10px; text-align:center;"><div style="color:${T.green}; font-weight:700; font-size:22px;">45</div><div>min Sunday</div></div></div></div>
+          <div class="card"><div class="section-title">Sunday Evening Scan</div>${["Open TradingView, filter Nifty 100 stocks above 200 EMA","Shortlist stocks pulling back toward 21 EMA","Confirm weekly uptrend","Watchlist of 5-8 candidates. Set alerts at 21 EMA."].map((s,i)=>`<div style="display:flex; gap:10px; margin-bottom:8px;"><div style="width:20px; height:20px; background:${T.amberDim}; border:1px solid ${T.amber}; border-radius:50%; color:${T.amber}; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:11px;">${i+1}</div><div>${s}</div></div>`).join('')}</div>
+          <div class="card"><div class="section-title">The 10 Commandments</div>${["Never enter without a stop loss","Never move stop loss further away","Never hold through earnings","Exit when setup is broken","No FOMO entries","In sideways markets, stay in cash","1% risk per trade. Always.","Max 4-6 open positions","Journal every trade","Backtest any strategy change"].map((r,i)=>`<div style="display:flex; gap:8px; margin-bottom:6px;"><span style="color:${i<3?T.red:T.amber};">✓</span><span>${r}</span></div>`).join('')}</div>
+        </div>`;
+    }
+
+    // ---------- Risk calculator logic ----------
+    function attachRiskEvents() {
+      const inv = document.getElementById('inv');
+      const entry = document.getElementById('entry');
+      const sl = document.getElementById('sl');
+      const target = document.getElementById('target');
+      if (!inv || !entry || !sl || !target) return;
+      const update = () => {
+        const invested = parseFloat(inv.value) || 0;
+        const ep = parseFloat(entry.value) || 0;
+        const stop = parseFloat(sl.value) || 0;
+        const tp = parseFloat(target.value) || 0;
+        const shares = ep > 0 ? Math.floor(invested / ep) : 0;
+        const riskPerShare = ep - stop;
+        const valid = invested>0 && ep>0 && stop>0 && riskPerShare>0 && tp>ep;
+        const totalRisk = valid ? shares * riskPerShare : 0;
+        const totalProfit = valid ? shares * (tp - ep) : 0;
+        const riskPercent = invested>0 ? (totalRisk/invested)*100 : 0;
+        const rr = valid ? ((tp-ep)/riskPerShare).toFixed(2) : "---";
+        document.getElementById('risk-output').innerHTML = `
+          <div class="grid-2" style="margin-bottom:12px;">
+            <div class="output-box"><div style="color:${T.muted}; font-size:10px;">Shares</div><div style="font-weight:700;">${valid ? shares+' shares' : (riskPerShare<=0 ? 'SL >= Entry' : 'Invalid')}</div></div>
+            <div class="output-box"><div style="color:${T.muted}; font-size:10px;">Invested</div><div>${fmt(invested)}</div></div>
+            <div class="output-box"><div style="color:${T.muted};">Total Risk</div><div style="color:${T.red};">${valid ? fmt(totalRisk) : '---'}</div></div>
+            <div class="output-box"><div style="color:${T.muted};">Risk %</div><div style="color:${riskPercent>2?T.red:T.amber};">${valid ? riskPercent.toFixed(2)+'%' : '---'}</div></div>
+          </div>
+          ${valid ? `<hr><div style="display:flex; gap:8px;"><div style="flex:1; background:${T.greenDim}; padding:10px;"><div>Profit</div><div style="color:${T.green};">+${fmt(totalProfit)}</div></div><div style="flex:1; background:${T.greenDim}; padding:10px;"><div>R:R</div><div style="color:${Number(rr)>=2?T.green:T.amber};">${rr}:1</div></div></div>` : ''}`;
+      };
+      [inv, entry, sl, target].forEach(el => el.addEventListener('input', update));
+      update();
+    }
+
+    // ---------- Journal (full dynamic) ----------
+    const BLANK = { stock:"", entryDate:"", entryPrice:"", stopLoss:"", target1:"", shares:"", notes:"", status:"open", exitPrice:"", exitDate:"" };
+    let trades = [];
+    try { trades = JSON.parse(localStorage.getItem("swingTrades") || "[]"); } catch(e){ trades = []; }
+
+    function saveTrades() { localStorage.setItem("swingTrades", JSON.stringify(trades)); }
+    let journalState = { showForm: false, form: {...BLANK}, editId: null, closingId: null, closeData: {}, filter: "all" };
+
+    function renderJournalTab() {
+      const state = journalState;
+      const closed = trades.filter(t=>t.status!=="open");
+      const wins = closed.filter(t=>t.status==="win"), losses = closed.filter(t=>t.status==="loss"), bes = closed.filter(t=>t.status==="breakeven");
+      const totalClosed = wins.length+losses.length;
+      const winRate = totalClosed>0 ? (wins.length/totalClosed)*100 : 0;
+      const totalPnl = closed.reduce((s,t)=>s+(t.pnl||0),0);
+      const avgWin = wins.length>0 ? wins.reduce((s,t)=>s+(t.pnl||0),0)/wins.length :0;
+      const avgLoss = losses.length>0 ? Math.abs(losses.reduce((s,t)=>s+(t.pnl||0),0)/losses.length) :0;
+      const expectancy = totalClosed>0 ? (winRate/100*avgWin)-((1-winRate/100)*avgLoss) :0;
+      const rVals = closed.filter(t=>t.rMultiple!=null);
+      const avgR = rVals.length>0 ? rVals.reduce((s,t)=>s+(t.rMultiple||0),0)/rVals.length :0;
+      const openCount = trades.filter(t=>t.status==="open").length;
+      const filtered = state.filter==="all" ? trades : trades.filter(t=>t.status===state.filter);
+
+      let html = `
+        <div>
+          <div class="card" style="border-color:${T.purple};">
+            <div class="section-title" style="color:${T.purple};">Performance Dashboard</div>
+            <div class="grid-2" style="margin-bottom:10px;">
+              <div class="output-box"><span style="color:${T.muted};">Win Rate</span><div style="font-weight:800;">${totalClosed>0?winRate.toFixed(1)+'%':'---'}</div></div>
+              <div class="output-box"><span style="color:${T.muted};">Closed</span><div>${totalClosed}</div></div>
+              <div class="output-box"><span style="color:${T.muted};">Total P&L</span><div style="color:${totalPnl>=0?T.green:T.red};">${closed.length>0?(totalPnl>=0?'+':'')+fmt(totalPnl):'---'}</div></div>
+              <div class="output-box"><span style="color:${T.muted};">Open</span><div style="color:${T.blue};">${openCount}</div></div>
+            </div>
+            ${totalClosed>0 ? `<div class="grid-2"><div>Avg Win +${fmt(avgWin)}</div><div>Avg Loss -${fmt(avgLoss)}</div><div>Avg R ${fmtR(avgR)}</div></div><div>Expectancy: ${expectancy>=0?'+':''}${fmt(expectancy)}</div>` : ''}
+          </div>`;
+
+      if (!state.showForm) html += `<div style="margin-bottom:12px;"><button class="btn full" style="background:${T.green}22; color:${T.green}; border-color:${T.green};" id="addTradeBtn">+ Add New Trade</button></div>`;
+      else html += renderJournalForm(state);
+
+      html += `<div style="display:flex; gap:6px; margin-bottom:12px;">${["all","open","win","loss","breakeven"].map(f=>`<button class="filter-btn small pill" data-filter="${f}" style="background:${state.filter===f?'var(--amber-dim)':'transparent'}; border:1px solid ${state.filter===f?'var(--amber)':'var(--border)'};">${f} (${f==='all'?trades.length:f==='open'?openCount:f==='win'?wins.length:f==='loss'?losses.length:bes.length})</button>`).join('')}</div>`;
+
+      filtered.forEach(trade => {
+        const pnl = trade.pnl, rMult = trade.rMultiple;
+        const isClosing = state.closingId === trade.id;
+        html += `<div class="card" style="border-color:${sColor(trade.status)};"><div style="display:flex; justify-content:space-between;"><strong>${trade.stock}</strong><span class="pill small" style="background:${sColor(trade.status)}22; color:${sColor(trade.status)};">${sLabel(trade.status)}</span></div>
+        <div class="grid-2"><div>Entry ${fmt(trade.entryPrice)}</div><div>SL ${fmt(trade.stopLoss)}</div><div>Target ${fmt(trade.target1)}</div></div>
+        ${pnl!=null?`<div style="background:${pnl>=0?T.greenDim:T.redDim}; padding:8px;">P&L ${pnl>=0?'+':''}${fmt(pnl)} ${rMult!=null? 'R:'+fmtR(rMult):''}</div>`:''}
+        ${trade.notes ? `<div style="font-style:italic; color:${T.muted};">"${trade.notes}"</div>`:''}
+        ${isClosing ? renderCloseBlock(trade.id) : ''}
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          ${trade.status==='open' && !isClosing ? `<button class="btn small close-trigger" data-id="${trade.id}" style="color:${T.green}; border-color:${T.green};">Close</button>`:''}
+          <button class="btn small outline edit-trigger" data-id="${trade.id}" style="color:${T.blue};">Edit</button>
+          <button class="btn small outline delete-trigger" data-id="${trade.id}" style="color:${T.red};">Delete</button>
+        </div></div>`;
+      });
+
+      contentRoot.innerHTML = html;
+    }
+
+    function renderJournalForm(state) {
+      const f = state.form;
+      return `<div class="card"><div class="section-title">${state.editId?'Edit':'New'} Trade</div>
+        <div class="grid-2">
+          <div style="grid-column:span 2;"><input id="jStock" placeholder="Stock" value="${escapeHtml(f.stock)}"></div>
+          <div><input id="jEntryDate" type="date" value="${f.entryDate||''}"></div><div><input id="jShares" type="number" placeholder="Shares" value="${f.shares||''}"></div>
+          <div><input id="jEntryPrice" type="number" placeholder="Entry Rs." value="${f.entryPrice||''}"></div><div><input id="jStopLoss" type="number" placeholder="SL Rs." value="${f.stopLoss||''}"></div>
+          <div><input id="jTarget" type="number" placeholder="Target" value="${f.target1||''}"></div>
+          <div><select id="jStatus">${["open","win","loss","breakeven"].map(s=>`<option value="${s}" ${f.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+          ${f.status!=='open'?`<div><input id="jExitPrice" type="number" placeholder="Exit Price" value="${f.exitPrice||''}"></div><div><input id="jExitDate" type="date" value="${f.exitDate||''}"></div>`:''}
+          <div style="grid-column:span 2;"><textarea id="jNotes" placeholder="Notes">${escapeHtml(f.notes||'')}</textarea></div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn full" id="saveJournalBtn" style="background:${T.green}22; color:${T.green}; border-color:${T.green};">Save</button>
+          <button class="btn outline full" id="cancelJournalBtn" style="color:${T.red};">Cancel</button>
+        </div></div>`;
+    }
+
+    function renderCloseBlock(id) {
+      return `<div style="background:${T.bg}; padding:10px; border-radius:8px;">
+        <div class="grid-2">
+          <select id="closeStatus_${id}"><option value="win">Win</option><option value="loss">Loss</option><option value="breakeven">Breakeven</option></select>
+          <input id="closePrice_${id}" type="number" placeholder="Exit Price">
+          <input id="closeDate_${id}" type="date" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+        <button class="btn small confirm-close" data-id="${id}" style="color:${T.green};">Confirm</button>
+        <button class="btn small outline cancel-close" style="color:${T.red};">Cancel</button>
+      </div>`;
+    }
+
+    function sColor(s) { return s==="win"?T.green:s==="loss"?T.red:s==="open"?T.blue:T.amber; }
+    function sLabel(s) { return s==="win"?"WIN":s==="loss"?"LOSS":s==="open"?"OPEN":"B/E"; }
+    function escapeHtml(text) { return String(text).replace(/[&<>"]/g, function(m){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]; }); }
+
+    function attachJournalEvents() {
+      document.getElementById('addTradeBtn')?.addEventListener('click', ()=>{
+        journalState = {...journalState, showForm:true, form:{...BLANK}, editId:null};
+        renderAll();
+      });
+      document.getElementById('saveJournalBtn')?.addEventListener('click', ()=>{
+        const get = id => document.getElementById(id)?.value || '';
+        const form = {
+          stock: get('jStock'), entryDate: get('jEntryDate'), shares: get('jShares'), entryPrice: get('jEntryPrice'),
+          stopLoss: get('jStopLoss'), target1: get('jTarget'), status: get('jStatus'), exitPrice: get('jExitPrice'),
+          exitDate: get('jExitDate'), notes: get('jNotes')
+        };
+        if(!form.stock||!form.entryPrice||!form.stopLoss||!form.shares) { alert('Fill required fields'); return; }
+        const ep=+form.entryPrice, sl=+form.stopLoss, sh=+form.shares, risk=ep-sl, t1=form.target1?+form.target1:ep+risk*1.5;
+        const exP = form.exitPrice ? +form.exitPrice : null;
+        const trade = {
+          ...form, id: journalState.editId || Date.now().toString(), entryPrice:ep, stopLoss:sl, shares:sh,
+          target1:t1, riskPerShare:risk, exitPrice:exP, exitDate:form.exitDate||null,
+          pnl: exP ? (exP-ep)*sh : null, rMultiple: exP ? (exP-ep)/risk : null,
+        };
+        if(journalState.editId) trades = trades.map(t=>t.id===journalState.editId?trade:t);
+        else trades = [trade, ...trades];
+        saveTrades();
+        journalState = { showForm:false, form:{...BLANK}, editId:null, closingId:null, closeData:{}, filter: journalState.filter };
+        renderAll();
+      });
+      document.getElementById('cancelJournalBtn')?.addEventListener('click', ()=>{
+        journalState.showForm = false; journalState.editId = null; renderAll();
+      });
+      document.querySelectorAll('.edit-trigger').forEach(b=>b.addEventListener('click', (e)=>{
+        const id = e.currentTarget.dataset.id;
+        const trade = trades.find(t=>t.id===id);
+        if(trade) {
+          journalState = {...journalState, showForm:true, form:{...trade, entryPrice:String(trade.entryPrice), stopLoss:String(trade.stopLoss), target1:String(trade.target1), shares:String(trade.shares), exitPrice:trade.exitPrice?String(trade.exitPrice):'', exitDate:trade.exitDate||''}, editId:id};
+          renderAll();
+        }
+      }));
+      document.querySelectorAll('.delete-trigger').forEach(b=>b.addEventListener('click', (e)=>{
+        if(confirm('Delete?')) { trades = trades.filter(t=>t.id!==e.currentTarget.dataset.id); saveTrades(); renderAll(); }
+      }));
+      document.querySelectorAll('.close-trigger').forEach(b=>b.addEventListener('click', (e)=>{
+        journalState.closingId = e.currentTarget.dataset.id; renderAll();
+      }));
+      document.querySelectorAll('.confirm-close').forEach(b=>b.addEventListener('click', (e)=>{
+        const id = e.currentTarget.dataset.id;
+        const price = +document.getElementById(`closePrice_${id}`)?.value;
+        if(!price) { alert('Enter exit price'); return; }
+        const status = document.getElementById(`closeStatus_${id}`)?.value || 'win';
+        const date = document.getElementById(`closeDate_${id}`)?.value || new Date().toISOString().split('T')[0];
+        trades = trades.map(t=>{
+          if(t.id!==id) return t;
+          return {...t, status, exitPrice:price, exitDate:date, pnl:(price-t.entryPrice)*t.shares, rMultiple:(price-t.entryPrice)/t.riskPerShare};
+        });
+        saveTrades(); journalState.closingId=null; renderAll();
+      }));
+      document.querySelectorAll('.cancel-close').forEach(b=>b.addEventListener('click', ()=>{ journalState.closingId=null; renderAll(); }));
+      document.querySelectorAll('.filter-btn').forEach(b=>b.addEventListener('click', (e)=>{
+        journalState.filter = e.currentTarget.dataset.filter; renderAll();
+      }));
+    }
+
+    // initial render
+    renderAll();
+  })();
+</script>
+</body>
+</html>
